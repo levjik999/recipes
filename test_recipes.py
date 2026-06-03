@@ -117,3 +117,86 @@ def test_recipe_len_with_merge():
     r.add_ingredient(Ingredient("Мука", 300, "г"))
     r.add_ingredient(Ingredient("Мука", 200, "г"))
     assert len(r) == 1
+
+def test_shopping_list_add_recipe():
+    sl = ShoppingList()
+    r = Recipe("Пицца")
+    r.add_ingredient(Ingredient("Мука", 500, "г"))
+    sl.add_recipe(r, 2)
+    result = sl.get_list()
+    assert len(result) == 1
+    assert result[0].quantity == 1000.0
+
+def test_shopping_list_add_recipe_zero_portions_raises():
+    sl = ShoppingList()
+    r = Recipe("Пицца")
+    r.add_ingredient(Ingredient("Мука", 500, "г"))
+    with pytest.raises(ValueError, match="Количество порций должно быть положительным"):
+        sl.add_recipe(r, 0)
+
+def test_shopping_list_add_recipe_negative_portions_raises():
+    sl = ShoppingList()
+    r = Recipe("Пицца")
+    r.add_ingredient(Ingredient("Мука", 500, "г"))
+    with pytest.raises(ValueError):
+        sl.add_recipe(r, -3)
+
+def test_shopping_list_remove_recipe():
+    sl = ShoppingList()
+    r = Recipe("Пицца")
+    r.add_ingredient(Ingredient("Мука", 500, "г"))
+    sl.add_recipe(r, 1)
+    sl.remove_recipe("Пицца")
+    assert sl.get_list() == []
+
+def test_shopping_list_remove_nonexistent_recipe_no_error():
+    sl = ShoppingList()
+    sl.remove_recipe("Несуществующий рецепт")
+
+def test_shopping_list_get_list_merges_same_ingredients():
+    sl = ShoppingList()
+    r1 = Recipe("Пицца Маргарита")
+    r1.add_ingredient(Ingredient("Мука", 300, "г"))
+    r2 = Recipe("Пицца 4 Сыра")
+    r2.add_ingredient(Ingredient("Мука", 200, "г"))
+    sl.add_recipe(r1, 1)
+    sl.add_recipe(r2, 1)
+    result = sl.get_list()
+    assert len(result) == 1
+    assert result[0].quantity == 500.0
+
+def test_shopping_list_get_list_sorted_by_name():
+    sl = ShoppingList()
+    r = Recipe("Тест")
+    r.add_ingredient(Ingredient("Яйца", 2, "шт"))
+    r.add_ingredient(Ingredient("Мука", 500, "г"))
+    r.add_ingredient(Ingredient("Масло", 100, "г"))
+    sl.add_recipe(r, 1)
+    result = sl.get_list()
+    names = [ing.name for ing in result]
+    assert names == sorted(names)
+
+def test_shopping_list_add_operator_combines():
+    sl1 = ShoppingList()
+    r1 = Recipe("Пицца")
+    r1.add_ingredient(Ingredient("Мука", 500, "г"))
+    sl1.add_recipe(r1, 1)
+    sl2 = ShoppingList()
+    r2 = Recipe("Паста")
+    r2.add_ingredient(Ingredient("Яйца", 3, "шт"))
+    sl2.add_recipe(r2, 1)
+    sl3 = sl1 + sl2
+    assert len(sl3.get_list()) == 2
+
+def test_shopping_list_add_operator_does_not_modify_originals():
+    sl1 = ShoppingList()
+    r1 = Recipe("Пицца")
+    r1.add_ingredient(Ingredient("Мука", 500, "г"))
+    sl1.add_recipe(r1, 1)
+    sl2 = ShoppingList()
+    _ = sl1 + sl2
+    assert len(sl1.get_list()) == 1
+
+def test_dietary_recipe_is_instance_of_recipe():
+    dr = DietaryRecipe("Салат", "веган")
+    assert isinstance(dr, Recipe)
